@@ -45,7 +45,6 @@ RealOffset=0x1c+0x44+0x384
 
 global BotList := Object()
 global IniFile := "BotOptions.ini"
-global InFile := "Grimmjawe Bot.ahk"
 global versionID := 0.25
 global versionTroveID := "20/02/2019"
 global FishingKey := "f"
@@ -256,10 +255,15 @@ DoUpdate:
 	WebRequest.Open("GET",url)
 	WebRequest.Send()
 	WebRequest.WaitForResponse()
-	;MsgBox, % WebRequest.ResponseText
-	File := FileOpen(A_ScriptFullPath, "w")
-	File.Write(WebRequest.ResponseText)
-	File.Close()
+	FileRead, OutputVarText, A_ScriptFullPath
+	if (WebRequest.ResponseText != OutputVarText) {
+		File := FileOpen(A_ScriptFullPath, "w")
+		File.Write(WebRequest.ResponseText)
+		File.Close()
+		}
+	else {
+		MsgBox, "Version is last!"
+		}
 	Reload
 return
 
