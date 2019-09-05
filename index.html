@@ -50,6 +50,7 @@ global versionTroveID := "20/02/2019"
 global FishingKey := "f"
 global MainHotkey := "^f"
 global PotionKey := "q"
+global TopShow := "0"
 global Pointer := Pointer
 global WaterOffset := WaterOffset
 global ChocoOffset := ChocoOffset
@@ -68,13 +69,16 @@ IfNotExist, %A_ScriptDir%/%IniFile%
 IniRead, FishingKey, %A_ScriptDir%/%IniFile%, Hotkeys, FishingKey
 IniRead, MainHotkey, %A_ScriptDir%/%IniFile%, Hotkeys, MainHotkey
 IniRead, PotionKey, %A_ScriptDir%/%IniFile%, Hotkeys, PotionKey
+IniRead, TopShow, %A_ScriptDir%/%IniFile%, Hotkeys, TopShow
+
+TopShow := TopShow
 
 Gui, Main:Add, Tab2, w380 h235 x10 y5, General|Fish Bot|Potion Bot|Settings|Premium
 Gui, Main:Add, Text,, Fishing bot for Trove by Grimmjawe
 Gui, Main:Add, Text,, Version: %versionID%
 Gui, Main:Add, Text,, Last trove patch supported : %versionTroveID%
 Gui, Main:Add, GroupBox, section x225 y30 w150 h130, Window Options
-Gui, Main:Add, Checkbox, vTopShow gDoTopShow x235 y50, Overlay
+Gui, Main:Add, Checkbox, Checked%TopShow% vTopShow gDoTopShow x235 y50, Overlay
 Gui, Main:Add, Button, x15 y165 w70 h70 gDoUpdate, Update`nscript
 Gui, Main:Add, Button, x90 y165 w70 h70,
 Gui, Main:Add, Button, x165 y165 w70 h70 gDoReset, Reset`nScript
@@ -135,8 +139,10 @@ Gui, Main:Add, Checkbox, x20 y103 vHideLog gHideLogPass, Hide
 Gui, Main:Add, Checkbox, x180 y78 vHidePass gHideLogPass,
 ReAlignFB_LV(true)
 
+
 Hotkey,%MainHotkey%,StartAll,On
 
+SetTimer, DoTopShow, 1
 SetTimer, ActiveInternetScan, 500
 SetTimer, ActiveClientScan, 325
 SetTimer, InfoUpdate, 375
@@ -255,10 +261,10 @@ DoUpdate:
 	WebRequest.Open("GET",url)
 	WebRequest.Send()
 	WebRequest.WaitForResponse()
-	File := FileOpen(A_ScriptFullPath, "w")
-	File.Write(WebRequest.ResponseText)
-	File.Close()
-	MsgBox, %Need reload to enable new version.% , Succesful Updated!
+	;File := FileOpen(A_ScriptFullPath, "w")
+	;File.Write(WebRequest.ResponseText)
+	;File.Close()
+	MsgBox, , Succesful Updated! , Need reload to enable new version.
 	Reload
 return
 
@@ -267,14 +273,16 @@ Donate:
 Return
 
 DoTopShow:
+	SetTimer, DoTopShow, off
 	Gui, Main:Submit, NoHide
-	if (TopShow) { 
+	if (TopShow) {
 		Gui, Main:+AlwaysOnTop
 	} 
 	else { 
 		Gui, Main:-AlwaysOnTop 
 	}
 	SoundPlay, %A_WinDir%\Media\Windows Ding.wav
+	SaveData()
 return
 
 UpdateFile:
@@ -814,6 +822,7 @@ SaveData()
 	IniWrite, %FishingKey%, %A_ScriptDir%/%IniFile%, Hotkeys, FishingKey
 	IniWrite, %MainHotkey%, %A_ScriptDir%/%IniFile%, Hotkeys, MainHotkey
 	IniWrite, %PotionKey%, %A_ScriptDir%/%IniFile%, Hotkeys, PotionKey
+	IniWrite, %TopShow%, %A_ScriptDir%/%IniFile%, Hotkeys, TopShow
 }
 	
 MainGuiEscape:
