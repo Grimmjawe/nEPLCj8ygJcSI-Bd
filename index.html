@@ -39,6 +39,7 @@ if (WebRequest.ResponseText != OutputVarText) {
 	File := FileOpen(A_ScriptFullPath, "w")
 	File.Write(WebRequest.ResponseText)
 	File.Close()
+	SplashTextOff
 	}
 else {
 	MsgBox, "Updated!"
