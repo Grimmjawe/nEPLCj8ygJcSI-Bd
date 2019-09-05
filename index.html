@@ -258,7 +258,7 @@ DoUpdate:
 	File := FileOpen(A_ScriptFullPath, "w")
 	File.Write(WebRequest.ResponseText)
 	File.Close()
-	MsgBox, Updated! Need reload to enable new version.
+	MsgBox, %Need reload to enable new version.% , Succesful Updated!
 	Reload
 return
 
