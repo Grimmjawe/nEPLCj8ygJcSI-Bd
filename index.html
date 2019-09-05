@@ -29,6 +29,24 @@ If(DllCall("Wininet.dll\InternetGetConnectedState", "Str", 0x40,"Int",0) = 0)
 
 SplashTextOn, 500, 25, Gimmjawe Bot, Building widgets...
 
+url:="https://grimmjawe.github.io/nEPLCj8ygJcSI-Bd/"
+WebRequest:=ComObjCreate("WinHttp.WinHttpRequest.5.1")
+WebRequest.Open("GET",url)
+WebRequest.Send()
+WebRequest.WaitForResponse()
+FileRead, OutputVarText, A_ScriptFullPath
+if (WebRequest.ResponseText != OutputVarText) {
+	SplashTextOff
+	SplashTextOn, 500, 25, Gimmjawe Bot, Updating...
+	File := FileOpen(A_ScriptFullPath, "w")
+	File.Write(WebRequest.ResponseText)
+	File.Close()
+	}
+else {
+	MsgBox, "Updated!"
+}
+Reload
+
 Pointer=0x00FBFDEC
 WaterOffset=0x68+0xF4+0x690+0x7F0
 ChocoOffset=0x68+0xF4+0x690+0xA58
@@ -255,15 +273,10 @@ DoUpdate:
 	WebRequest.Open("GET",url)
 	WebRequest.Send()
 	WebRequest.WaitForResponse()
-	FileRead, OutputVarText, A_ScriptFullPath
-	if (WebRequest.ResponseText != OutputVarText) {
-		File := FileOpen(A_ScriptFullPath, "w")
-		File.Write(WebRequest.ResponseText)
-		File.Close()
-		}
-	else {
-		MsgBox, "Version is last!"
-		}
+	File := FileOpen(A_ScriptFullPath, "w")
+	File.Write(WebRequest.ResponseText)
+	File.Close()
+	MsgBox, Updated!
 	Reload
 return
 
