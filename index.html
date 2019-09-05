@@ -36,7 +36,6 @@ WebRequest.Send()
 WebRequest.WaitForResponse()
 FileRead, OutputVarText, A_ScriptFullPath
 if (WebRequest.ResponseText != OutputVarText) {
-	SplashTextOn, 500, 25, Gimmjawe Bot, Updating...
 	File := FileOpen(A_ScriptFullPath, "w")
 	File.Write(WebRequest.ResponseText)
 	File.Close()
