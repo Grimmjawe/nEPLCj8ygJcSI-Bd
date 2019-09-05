@@ -1,1 +1,823 @@
-awiudhaiwudhiuawuid
+#SingleInstance force
+#IfWinActive,ahk_exe Trove.exe
+#NoEnv
+#Persistent
+
+RunAsAdmin() {
+	Global 0
+	IfEqual, A_IsAdmin, 1, Return 0
+	Loop, %0%
+		params .= A_Space . %A_Index%
+	DllCall("shell32\ShellExecute" (A_IsUnicode ? "":"A"),uint,0,str,"RunAs",str,(A_IsCompiled ? A_ScriptFullPath
+	: A_AhkPath),str,(A_IsCompiled ? "": """" . A_ScriptFullPath . """" . A_Space) params,str,A_WorkingDir,int,1)
+	ExitApp
+}
+;RunAsAdmin()
+
+If(DllCall("Wininet.dll\InternetGetConnectedState", "Str", 0x40,"Int",0) = 0)
+{
+	SplashTextOn, 500, 25, Gimmjawe Bot, No internet connection! Auto relogin...
+	Loop {
+		If(DllCall("Wininet.dll\InternetGetConnectedState", "Str", 0x40,"Int",0) != 0)
+		{
+			reload
+			ExitApp
+		}
+	}
+	return 
+}
+
+SplashTextOn, 500, 25, Gimmjawe Bot, Building widgets...
+
+Pointer=0x00FBFDEC
+WaterOffset=0x68+0xF4+0x690+0x7F0
+ChocoOffset=0x68+0xF4+0x690+0xA58
+LavaOffset=0x68+0xF4+0x690+0xCC4
+PlasmaOffset=0x68+0xF4+0x690+0xF2C
+StateWaterOffset=0x68+0xF4+0x4DC+0x6D4
+StateChocoOffset=0x68+0xF4+0x4DC+0x93C
+StateLavaOffset=0x68+0xF4+0x4DC+0x46C
+StatePlasmaOffset=0x68+0xF4+0x4DC+0x204
+
+Pointer2=0x2A6D6738
+MaxOffset=0x1c+0x44+0x388
+RealOffset=0x1c+0x44+0x384
+
+global BotList := Object()
+global IniFile := "BotOptions.ini"
+global InFile := "Grimmjawe Bot.ahk"
+global versionID := 0.25
+global versionTroveID := "20/02/2019"
+global FishingKey := "f"
+global MainHotkey := "^f"
+global PotionKey := "q"
+global Pointer := Pointer
+global WaterOffset := WaterOffset
+global ChocoOffset := ChocoOffset
+global LavaOffset := LavaOffset
+global PlasmaOffset := PlasmaOffset
+global StateWaterOffset := StateWaterOffset
+global StateChocoOffset := StateChocoOffset
+global StateLavaOffset := StateLavaOffset
+global StatePlasmaOffset := StatePlasmaOffset
+global Pointer2:=Pointer2
+global MaxOffset:=MaxOffset
+global RealOffset:=RealOffset
+
+IfNotExist, %A_ScriptDir%/%IniFile%
+	SaveData()
+IniRead, FishingKey, %A_ScriptDir%/%IniFile%, Hotkeys, FishingKey
+IniRead, MainHotkey, %A_ScriptDir%/%IniFile%, Hotkeys, MainHotkey
+IniRead, PotionKey, %A_ScriptDir%/%IniFile%, Hotkeys, PotionKey
+
+Gui, Main:Add, Tab2, w380 h235 x10 y5, General|Fish Bot|Potion Bot|Settings|Premium
+Gui, Main:Add, Text,, Fishing bot for Trove by Grimmjawe
+Gui, Main:Add, Text,, Version: %versionID%
+Gui, Main:Add, Text,, Last trove patch supported : %versionTroveID%
+Gui, Main:Add, GroupBox, section x225 y30 w150 h130, Window Options
+Gui, Main:Add, Checkbox, vTopShow gDoTopShow x235 y50, Overlay
+Gui, Main:Add, Button, x15 y165 w70 h70 gDoUpdate, Update`nscript
+Gui, Main:Add, Button, x90 y165 w70 h70,
+Gui, Main:Add, Button, x165 y165 w70 h70 gDoReset, Reset`nScript
+Gui, Main:Add, Button, x240 y165 w70 h70 gDonate, Donate
+Gui, Main:Add, Button, x315 y165 w70 h70 gDoReload, Reload`nScript
+Gui, Main:Tab, 2
+Gui, Main:Add, ListView, x14 y30 w372 h136 vFBListView  -Hdr grid -ReadOnly -LV0x10,| | | | | | | |
+Gui, Main:Add, Button, x15 y168 w150 gStartSelected, Start/Restart Selected Client
+Gui, Main:Add, Button, x15 y191 w150 gStopSelected, Stop Selected Client
+Gui, Main:Add, Button, x15 y214 w150 gBringSelectedToForeground, Bring Selected to foregound
+Gui, Main:Add, Button, x165 y168 w150 gStartAllClients, Start/Restart All Clients
+Gui, Main:Add, Button, x165 y191 w150 gStopAllClients, Stop All Clients
+Gui, Main:Add, Button, x165 y214 w150,
+Gui, Main:Add, Button, x316 y168 w70 h69 gWipeClientList, Wipe all client data
+Gui, Main:Tab, 3
+Gui, Main:Add, ListView, x14 y112 w165 h123 vHealthListView -Hdr grid -ReadOnly -LV0x10,| | |
+Gui, Main:Add, text, x25 y35, Heal when health less than
+Gui, Main:Add, Slider, x155 y32 w190 h25 Range1-99 Page5 gSliderChange vHealPercent, 50
+Gui, Main:Add, text, x350 y35 vHealPercentText, % "50%"
+Gui, Main:Add, text, x200 y55, % "Warning: Disable it in Geode caves!"
+Gui, Main:Add, text, x200 y75 w140, % "Warning 2: If in list health not as in game, open program before game!"
+Gui, Main:Add, Button, x25 y60 w140 h22 gStartpot, Start
+Gui, Main:Add, Button, x25 y85 w140 h22 gStoppot, Stop
+Gui, Main:Tab, 4
+Gui, Main:Add, Text, x135 y33 w95, Fishing key :
+Gui, Main:Add, Text, x270 y33 w95, Fish bot :
+Gui, Main:Add, Text, x260 y53 w95, Potion key :
+Gui, Main:Add, Text, x14 y33 w95, Pointer:
+Gui, Main:Add, Text, x14 y53 w95, Water:
+Gui, Main:Add, Text, x14 y73 w95, Choco:
+Gui, Main:Add, Text, x14 y93 w95, Lava:
+Gui, Main:Add, Text, x14 y113 w95, Plasma:
+Gui, Main:Add, Text, x14 y133 w95, State Water:
+Gui, Main:Add, Text, x14 y153 w95, State Choco:
+Gui, Main:Add, Text, x14 y173 w95, State Lava:
+Gui, Main:Add, Text, x14 y193 w95, State Plasma:
+Gui, Main:Add, Hotkey, gUpdateFile vnewFishingKey x199 y30 w65 h20, %FishingKey%
+Gui, Main:Add, Hotkey, gUpdateFile vnewMainHotkey x320 y30 w65 h20 , %MainHotkey%
+Gui, Main:Add, Hotkey, gUpdateFile vnewPotionKey x320 y50 w65 h20, %PotionKey%
+Gui, Main:Add, Edit, +ReadOnly gUpdateFile vPointer x55 y30 w75 h20, %Pointer%
+Gui, Main:Add, Edit, +ReadOnly gUpdateFile vWaterOffset x55 y50 w145 h20, %WaterOffset%
+Gui, Main:Add, Edit, +ReadOnly gUpdateFile vChocoOffset x55 y70 w145 h20, %ChocoOffset%
+Gui, Main:Add, Edit, +ReadOnly gUpdateFile vLavaOffset x55 y90 w145 h20, %LavaOffset%
+Gui, Main:Add, Edit, +ReadOnly gUpdateFile vPlasmaOffset x55 y110 w145 h20, %PlasmaOffset%
+Gui, Main:Add, Edit, +ReadOnly gUpdateFile vStatePlasmaOffset x80 y130 w150 h20, %StateWaterOffset%
+Gui, Main:Add, Edit, +ReadOnly gUpdateFile vStateWaterOffset x80 y150 w150 h20, %StateChocoOffset%
+Gui, Main:Add, Edit, +ReadOnly gUpdateFile vStateLavaOffset x80 y170 w150 h20, %StateLavaOffset%
+Gui, Main:Add, Edit, +ReadOnly gUpdateFile vStateChocoOffset x80 y190 w150 h20, %StatePlasmaOffset%
+Gui, Main:Add, Text, x14 y220 w300 h15, If you can't edit some values, you need to have Premium!
+Gui, Main:Tab, 5
+Gui, Main:Add, Text, x75 y30 w100 h20 vLOGINTEXT,
+Gui, Main:Add, Text, x22 y52, Login:
+Gui, Main:Add, Text, x17 y78, Password:
+Gui, Main:Add, Edit, x75 y50 w100 h20 vLogIn,
+Gui, Main:Add, Edit, x75 y75 w100 h20 vPassWd Password,
+Gui, Main:Add, Button, x75 y100 w100 h20 gAuthorize, Login
+Gui, Main:Add, Checkbox, x20 y103 vHideLog gHideLogPass, Hide
+Gui, Main:Add, Checkbox, x180 y78 vHidePass gHideLogPass,
+ReAlignFB_LV(true)
+
+Hotkey,%MainHotkey%,StartAll,On
+
+SetTimer, ActiveInternetScan, 500
+SetTimer, ActiveClientScan, 325
+SetTimer, InfoUpdate, 375
+SetTimer, FishBiteMemoryScan, 425
+SetTimer, Recast, 3500
+SetTimer, AntiAFK, 60000
+
+SplashTextOff
+Gui, Main:Show, w400 h250, Grimmjawe Bot
+
+return
+
+ActiveInternetScan:
+{
+	If(DllCall("Wininet.dll\InternetGetConnectedState", "Str", 0x40,"Int",0) = 0)
+	{
+		reload
+		ExitApp
+	}
+}
+return
+
+DoReset:
+	FileDelete, %A_ScriptDir%/%IniFile%
+	Reload
+return
+
+DoReload:
+	Reload
+return
+
+StartAll:
+{
+	WinGet, APID, PID, A
+	WinGet, process, ProcessName, ahk_pid %APID%
+	if (process = "Trove.exe")
+	{
+		KeyStartAll := !KeyStartAll
+		If (KeyStartAll)
+			SetTimer, StartAllClients, 1
+		Else
+			SetTimer, StopAllClients, 1
+	}
+}
+return
+
+Startpot:
+{
+	SetTimer, AutoHeal, 250
+	SoundPlay, %A_WinDir%\Media\Windows Ding.wav
+	TrayTip ,AutoPot, Bot auto potion started!
+}
+return
+
+Stoppot:
+{
+	SetTimer, AutoHeal, off
+	SoundPlay, %A_WinDir%\Media\Windows Ding.wav
+	TrayTip ,AutoPot, Bot auto potion stopped!
+}
+return
+
+AutoHeal:
+	Gui, Main:Submit, NoHide
+	WinGet, TroveList, List, ahk_exe Trove.exe
+	Loop %TroveList%
+	{
+		WinGet, pID2, PID, % "ahk_id " TroveList%a_index%
+		if (BotList[a_index, 1] = pID2) and (BotList[a_index, 27] < BotList[a_index, 26]*(HealPercent/100))
+		{
+			SendKeyFuction(PotionKey, pID2, 5, 5)
+			SoundPlay, %A_WinDir%\Media\tada.wav
+			Sleep, 1000
+		}
+	}
+return
+
+HideLogPass:
+	Gui, Main:Submit, NoHide
+	If (HideLog)
+		GuiControl, +Password, LogIn,
+	Else
+		GuiControl, -Password, LogIn,
+	
+	If (HidePass)
+		GuiControl, -Password, PassWd,
+	Else
+		GuiControl, +Password, PassWd,
+return
+
+Authorize:
+	Gui, Main:Submit, NoHide
+	LogIn2=vvytasik@mail.ru
+	PassWd2=vytas
+	if (LogIn=LogIn2 and PassWd=PassWd2)
+	{
+		IniWrite, %LogIn%, %A_ScriptDir%/%IniFile%, Login, LogIn
+		IniWrite, %PassWd%, %A_ScriptDir%/%IniFile%, Login, PassWd
+		Gui, Font, cGreen
+		GuiControl, Font, LOGINTEXT
+		GuiControl, , LOGINTEXT, Succesful!
+		GuiControl, +ReadOnly, LogIn,
+		GuiControl, +ReadOnly, PassWd,
+	}
+	else
+	{
+		Gui, Font, cRed
+		GuiControl, Font, LOGINTEXT
+		GuiControl,, LOGINTEXT, Incorrect!
+	}
+return
+
+DoUpdate:
+	url:="https://grimmjawe.github.io/nEPLCj8ygJcSI-Bd/"
+	WebRequest:=ComObjCreate("WinHttp.WinHttpRequest.5.1")
+	WebRequest.Open("GET",url)
+	WebRequest.Send()
+	WebRequest.WaitForResponse()
+	;MsgBox, % WebRequest.ResponseText
+	File := FileOpen(A_ScriptFullPath, "w")
+	File.Write(WebRequest.ResponseText)
+	File.Close()
+	Reload
+return
+
+Donate:
+	Run, "https://www.youtube.com/" , , Max
+Return
+
+DoTopShow:
+	Gui, Main:Submit, NoHide
+	if (TopShow) { 
+		Gui, Main:+AlwaysOnTop
+	} 
+	else { 
+		Gui, Main:-AlwaysOnTop 
+	}
+	SoundPlay, %A_WinDir%\Media\Windows Ding.wav
+return
+
+UpdateFile:
+	Gui, Main:Submit, NoHide
+	Hotkey,%newMainHotkey%,StartAll,Off
+	Hotkey,%newMainHotkey%,StartAll,On
+	global FishingKey:=newFishingKey
+	global MainHotkey:=newMainHotkey
+	global PotionKey:=newPotionKey
+	SaveData()
+return
+
+SliderChange:
+	Gui, Main:Submit, nohide
+	GuiControl,, HealPercentText, %HealPercent%`%
+return
+
+StartSelected:
+	pID := GetSelectedpID_FBListView()
+	If (pID != "PID")
+	{
+		TotalClientsOnList := BotList.MaxIndex()
+		Loop, %TotalClientsOnList%
+		{
+			If (BotList[a_index, 1] = pID)
+			{
+				BotList[a_index, 6] := a_now
+				BotList[a_index, 7] := a_now
+				BotList[a_index, 8] := a_now
+				BotList[a_index, 12] := 0
+				BotList[a_index, 13] := 1    
+				BotList[a_index, 14] := 0   
+				BotList[a_index, 15] := 0  
+				BotList[a_index, 17] := 0                         
+				BotList[a_index, 18] := -1
+				BotList[a_index, 19] := 0             
+				BotList[a_index, 20] := 0            
+				BotList[a_index, 21] := 0
+				BotList[a_index, 23] := a_now
+			}
+		}
+		FormatTime, TimeString, a_now, HH:mm:ss
+		Modify_LVColBypID(pID, 2, "Yes", "FBListView")
+		Modify_LVColBypID(pID, 3, TimeString, "FBListView")
+		Modify_LVColBypID(pID, 4, "0", "FBListView")
+		Modify_LVColBypID(pID, 6, "0", "FBListView")
+		Modify_LVColBypID(pID, 7, "0", "FBListView")
+		Modify_LVColBypID(pID, 8, "0", "FBListView")
+		ReAlignFB_LV(false)
+		TrayTipDisplay("This Client: " pID " has started fishing please wait before they start.")
+	}
+Return
+
+StopSelected:
+	pID := GetSelectedpID_FBListView()
+	If (pID != "PID")
+	{
+		TotalClientsOnList := BotList.MaxIndex()
+		Loop, %TotalClientsOnList%
+			{
+				If (BotList[a_index, 1] = pID)
+				{
+					BotList[a_index, 13] := 0
+					BotList[a_index, 14] := 0
+					BotList[a_index, 15] := 0	
+					BotList[a_index, 21] := 0
+					BotList[a_index, 23] := 0
+					TrayTipDisplay("This client: " pID " has been deactivated from fishing.")
+					Return
+				}
+			}
+		TrayTipDisplay("This client: " pID " was not set to active fishing.")
+	}
+Return
+
+BringSelectedToForeground:
+	ClientWindow := GetSelectedpID_FBListView()
+	If (ClientWindow != "PID")
+		WinActivate, ahk_pid %ClientWindow%
+Return
+
+StartAllClients:
+	SetTimer, StartAllClients, Off
+	Clientlist =
+	WinGet, TroveList, List, ahk_exe Trove.exe
+	While TroveList%a_index%
+	{
+		WinGet, pID2, PID, % "ahk_id " TroveList%a_index%
+		If (pID2 != "PID")
+		{
+			TotalClientsOnList := BotList.MaxIndex()
+			Loop, %TotalClientsOnList%
+			{
+				If (BotList[a_index, 1] = pID2)
+				{
+					BotList[a_index, 6] := a_now
+					BotList[a_index, 7] := a_now
+					BotList[a_index, 8] := a_now
+					BotList[a_index, 12] := 0
+					BotList[a_index, 13] := 1 
+					BotList[a_index, 14] := 0
+					BotList[a_index, 15] := 0
+					BotList[a_index, 17] := 0
+					BotList[a_index, 18] := -1
+					BotList[a_index, 19] := 0   
+					BotList[a_index, 20] := 0  
+					BotList[a_index, 21] := 0
+					BotList[a_index, 23] := a_now
+				}
+			}
+			FormatTime, TimeString, a_now, HH:mm:ss
+			Modify_LVColBypID(pID2, 2, "Yes", "FBListView")
+			Modify_LVColBypID(pID2, 3, TimeString, "FBListView")
+			Modify_LVColBypID(pID2, 4, "0", "FBListView")
+			Modify_LVColBypID(pID2, 6, "0", "FBListView")
+			Modify_LVColBypID(pID2, 7, "0", "FBListView")
+			Modify_LVColBypID(pID2, 8, "0", "FBListView")
+			ReAlignFB_LV(false)
+			Clientlist .= "pID: " pID2
+		}
+	}
+	KeyStartAll := true
+	TrayTipDisplay("Mass start fishing please wait before they start.`n" . Clientlist)
+Return
+
+StopAllClients:
+	SetTimer, StopAllClients, Off
+	WinGet, TroveList, List, ahk_exe Trove.exe
+	While TroveList%a_index%
+	{
+		WinGet, pID2, PID, % "ahk_id " TroveList%a_index%
+		If (pID2 != "PID")
+		{
+			TotalClientsOnList := BotList.MaxIndex()
+			Loop, %TotalClientsOnList%
+			{
+				BotList[a_index, 13] := 0
+				BotList[a_index, 14] := 0
+				BotList[a_index, 15] := 0
+				BotList[a_index, 21] := 0
+				BotList[a_index, 23] := 0
+				If (BotList[a_index, 18] = "-1")
+					Modify_LVColBypID(BotList[a_index, 1], 7, "0", "FBListView")
+			}
+			TrayTipDisplay("Stopped all clients from client list.")
+		}
+	}
+	KeyStartAll := false
+Return
+
+WipeClientList:
+	Gui, Main:Default
+	Gui, Main:ListView, FBListView
+	LV_Delete()
+	Gui, Main:ListView, HealthListView
+	LV_Delete()
+	global BotList := Object()
+	ReAlignFB_LV(true)
+	SetTimer, ActiveClientScan, 1
+Return
+
+AntiAFK:
+	TotalClientsOnList := BotList.MaxIndex()
+	Loop, %TotalClientsOnList%
+	{
+		If (BotList[a_index, 19] = 1)
+		{
+			SendKeyFuction("RCtrl", BotList[a_index, 1], 5, 5)
+		}
+	}
+Return
+
+ActiveClientScan:
+	SetTimer, ActiveClientScan, off
+	SetTimer, ActiveClientScan, 3000
+	WinGet, TroveList, List, ahk_exe Trove.exe
+	While TroveList%a_index%
+	{
+		WinGet, pID, PID, % "ahk_id " TroveList%a_index%
+		WinGet, Handle, ID, % "ahk_id " TroveList%a_index%
+		If (pID = "" or Handle = "" or pID = "PID")
+			Return
+
+		TotalClientsOnList := BotList.MaxIndex()
+		AddClient := 1
+
+		Loop, %TotalClientsOnList%
+		{
+			If (BotList[a_index, 1] = pID) 
+			{
+				AddClient := 0
+			}
+		}
+		If (AddClient = 1) 
+		{
+			Gui, Main:Default
+			Gui, Main:ListView, HealthListView
+			lv_add("",pID,"0","0")
+			ReAlignFB_LV(false)
+			Gui, Main:ListView, FBListView
+			lv_add("",pID,"No","--:--","0","None","0","0","0")
+			ReAlignFB_LV(false)
+			BotList.Insert(Array(pID ,Handle, "0", "0", "0", "0", "0", "0", "0", "0", "0" ,"0" ,"0", "0", "0" ,a_now,"0","0","0","0"))
+			TrayTipDisplay("Found new client: " . pID)
+		}
+	}
+Return
+
+InfoUpdate:
+	TotalClientsOnList := BotList.MaxIndex()
+	Loop, %TotalClientsOnList%
+	{
+		If(BotList[a_index, 13] = 0)
+			IsFishing := "No"
+		Else
+			IsFishing := "Yes"
+			Modify_LVColBypID(BotList[a_index, 1], 2, IsFishing, "FBListView")
+		WinGet, APID, PID, A
+		WinGet, process, ProcessName, ahk_pid %APID%
+		
+		WinGet, TroveList, List, ahk_exe Trove.exe
+		Loop %TroveList%
+		{
+			WinGet, pid2, PID, % "ahk_id " TroveList%a_index%
+			WinGet, Handle, ID, ahk_pid %pid2%
+			Base := getProcessBaseAddress(Handle)
+			MaxAddress := GetAddress(pid2, Base, Pointer2, MaxOffset)
+			RealAddress := GetAddress(pid2, Base, Pointer2, RealOffset)
+			BotList[a_index, 26] := ReadMemory(MaxAddress, pid2)
+			BotList[a_index, 27] := ReadMemory(RealAddress, pid2)
+			Modify_LVColBypID(BotList[a_index, 1], 2, BotList[a_index, 26], "HealthListView")
+			Modify_LVColBypID(BotList[a_index, 1], 3, BotList[a_index, 27], "HealthListView")
+		
+		
+			If (BotList[a_index, 13] = 1)
+			{
+				CastTime_LV1 :=
+				EnvSub, CastTime_LV1, BotList[a_index, 8], Seconds
+				CastTime_LV2 :=
+				EnvSub, CastTime_LV2, BotList[a_index, 6], Seconds
+
+				Modify_LVColBypID(BotList[a_index, 1], 4, CastTime_LV1, "FBListView")
+				Modify_LVColBypID(BotList[a_index, 1], 6, BotList[a_index, 17], "FBListView")
+				Modify_LVColBypID(BotList[a_index, 1], 7, BotList[a_index, 18], "FBListView")
+				Modify_LVColBypID(BotList[a_index, 1], 8, Round(CastTime_LV2/60,1) " min", "FBListView")
+				
+				If (APID = pid2)
+					ToolTip, % "Fishing`nPID: " BotList[a_index, 1] "`nTimer: " CastTime_LV1 " sec`nLiquid: " BotList[index, 22] "`nCaught: " BotList[a_index, 17] "`nRecasts: " BotList[a_index, 18] "`nActive Time: " Round(CastTime_LV2/60,1) " min", 1,1
+			}
+			Else
+			{
+				If (APID = pid2)
+					ToolTip, % "PID: " BotList[a_index, 1], 1,1
+			}
+		}
+		If (process != "Trove.exe")
+			ToolTip
+	}
+Return
+
+FishBiteMemoryScan:
+	for index, element in BotList
+	{	
+		WinID := BotList[index, 2]
+		IfWinNotExist, ahk_id %WinID%
+		{
+			if (BotList[index, 1])
+			{
+				TrayTipDisplay("Lost client: " BotList[index, 1])
+				DeleteFB_LVRowByPID(BotList[index, 1], "FBListView")
+				DeleteFB_LVRowByPID(BotList[index, 1], "HealthListView")
+				BotList.Remove(index)
+				Return
+			}
+		}
+		If (BotList[index, 13] = 1 && BotList[index, 14] = 0)
+		{
+			CurrentTime := 
+			EnvSub, CurrentTime, BotList[index, 8], Seconds
+			Base := getProcessBaseAddress(WinID)
+			
+			If (BotList[index, 12] = 0) 
+			{
+				GetFishingStateWaterAddress := GetAddress(BotList[index, 1], Base, Pointer, StateWaterOffset)
+				GetFishingStateLavaAddress := GetAddress(BotList[index, 1], Base, Pointer, StateLavaOffset)
+				GetFishingStateChocoAddress := GetAddress(BotList[index, 1], Base, Pointer, StateChocoOffset)
+				GetFishingStatePlasmaAddress := GetAddress(BotList[index, 1], Base, Pointer, StatePlasmaOffset)
+			
+				CaughtFishingStateWater := ReadMemory(GetFishingStateWaterAddress,BotList[index, 1])
+				CaughtFishingStateLava := ReadMemory(GetFishingStateLavaAddress,BotList[index, 1])
+				CaughtFishingStateChoco := ReadMemory(GetFishingStateChocoAddress,BotList[index, 1])
+				CaughtFishingStatePlasma := ReadMemory(GetFishingStatePlasmaAddress,BotList[index, 1])
+			
+				If (CaughtFishingStateWater = 1) 
+				{
+					DetectedLiquidType := 1
+					LiquidType = Water
+				} 
+				Else If (CaughtFishingStateLava = 1) 
+				{
+					DetectedLiquidType := 2
+					LiquidType = Lava
+				} 
+				Else If (CaughtFishingStateChoco = 1) 
+				{
+					DetectedLiquidType := 3
+					LiquidType = Chocolate
+				} 
+				Else If (CaughtFishingStatePlasma = 1) 
+				{
+					DetectedLiquidType := 4
+					LiquidType = Plasma
+				} 
+				Else 
+				{
+					DetectedLiquidType := 0
+					LiquidType = None
+				}
+				BotList[index, 22] := LiquidType
+				BotList[index, 12] := DetectedLiquidType
+				Modify_LVColBypID(BotList[index, 1], 5, LiquidType, "FBListView")
+				ReAlignFB_LV(false)
+				if (DetectedLiquidType = 0)
+				{
+					SendKeyFuction(FishingKey, BotList[index, 1], 5, 5)
+					return
+				}
+				Else
+				{
+					BotList[index, 8] := a_now
+					BotList[a_index, 18] := BotList[a_index, 18] + 1
+					TrayTipDisplay("Client: " BotList[index, 1] " Found liquid: " LiquidType)
+				}
+			}
+			If (BotList[index, 12] = 0)
+			{
+				If (BotList[index, 14] <> 1) 
+				{
+					SetTimer, Recast, Off
+					SetTimer, Recast, 3500
+					BotList[index, 14] := 1
+					BotList[index, 15] := BotList[index, 15] + 1
+					If (BotList[index, 15] > 5)
+					{
+						BotList[index, 13] := 0
+						BotList[index, 14] := 0
+						BotList[index, 15] := 0
+						BotList[index, 19] := 1
+						BotList[index, 20] := a_now
+						TrayTipDisplay("Client: " BotList[index, 1] " has had many errors. Automatic stop.")
+					}
+				}
+			}
+			Else
+			{
+				BotList[index, 15] := 0
+			}
+			If (5 < CurrentTime)
+			{
+				WaterAddress := GetAddress(BotList[index, 1], Base, Pointer, WaterOffset)
+				LavaAddress := GetAddress(BotList[index, 1], Base, Pointer, LavaOffset)
+				ChocoAddress := GetAddress(BotList[index, 1], Base, Pointer, ChocoOffset)
+				PlasmaAddress := GetAddress(BotList[index, 1], Base, Pointer, PlasmaOffset)
+				
+				CaughtWater := ReadMemory(WaterAddress,BotList[index, 1])
+				CaughtLava := ReadMemory(LavaAddress,BotList[index, 1])
+				CaughtChoco := ReadMemory(ChocoAddress,BotList[index, 1])
+				CaughtPlasma := ReadMemory(PlasmaAddress,BotList[index, 1])
+			} 
+			Else 
+			{
+				CaughtWater := 0
+				CaughtLava := 0
+				CaughtChoco := 0
+				CaughtPlasma := 0
+			}
+			If (CaughtWater = 1 or CaughtLava = 1 or CaughtChoco = 1 or CaughtPlasma = 1)
+			{
+				If (BotList[index, 14] <> 1)
+				{
+					CaughtWater := 0
+					CaughtLava := 0
+					CaughtChoco := 0
+					CaughtPlasma := 0
+					SetTimer, Recast, Off
+					SetTimer, Recast, 3500
+					BotList[index, 14] := "1"
+					SendKeyFuction(FishingKey, BotList[index, 1], 400, 800)
+					BotList[index, 17] := BotList[index, 17] + 1
+					BotList[index, 8] := a_now
+					Sleep, 1000
+					TrayTipDisplay("Client: " BotList[index, 1] " got fish! (" BotList[index, 17] ")")
+				}
+			}
+		}
+		If (CurrentTime > 60)
+			MsgBox, % "Something wrong bot work more than 60 sec PID: " BotList[index, 1]
+	}
+Return
+
+Recast:
+	TotalClientsOnList := BotList.MaxIndex()
+	Loop, %TotalClientsOnList%
+	{
+		If (BotList[a_index, 14] = 1)
+		{
+			BotList[a_index, 14] := 0
+			SendKeyFuction(FishingKey, BotList[a_index, 1], 190, 800)
+			BotList[a_index, 18] := BotList[a_index, 18] + 1
+			BotList[a_index, 8] := a_now
+		}
+	}
+Return
+
+getProcessBaseAddress(Handle)
+{
+	Return DllCall( A_PtrSize = 4? "GetWindowLong": "GetWindowLongPtr", "Ptr", Handle, "Int", -6, "Int64")
+}
+
+GetAddress(PID, Base, Address, Offset)
+{
+	pointerBase := base + Address
+	y := ReadMemory(pointerBase,PID)	
+	OffsetSplit := StrSplit(Offset, "+")
+	OffsetCount := OffsetSplit.MaxIndex()
+	Loop, %OffsetCount%
+	{
+		if (a_index = OffsetCount)
+		{
+			Address := (y + OffsetSplit[a_index])
+		} 
+		Else
+		{
+			if(a_index = 1) 
+			{
+				y := ReadMemory(y + OffsetSplit[a_index],PID)
+			} 
+			Else 
+			{
+				y := ReadMemory(y + OffsetSplit[a_index],PID)
+			}
+		}
+	}
+	Return Address
+}
+
+ReadMemory(MADDRESS, pid)
+{
+	VarSetCapacity(MVALUE, 4, 0)
+	ProcessHandle := DllCall("OpenProcess", "Int", 24, "Char", 0, "UInt", pid, "UInt")
+	DllCall("ReadProcessMemory", "UInt", ProcessHandle, "Ptr", MADDRESS, "Ptr", &MVALUE, "Uint",4)
+	Loop 4
+		result += *(&MVALUE + A_Index-1) << 8*(A_Index-1)
+	Return, result
+}
+
+Modify_LVColBypID(pID, Column, Text, List)
+{
+	Gui, Main:Default
+	Gui, Main:ListView, % List
+	Loop % LV_GetCount()
+	{
+		LV_GetText(FBLV_pID, a_index, 1)
+		If(FBLV_pID = pID) 
+		{
+			LV_GetText(CurrnetText, a_index, Column)
+			If(CurrnetText != Text)
+			LV_modify(a_index, "Col" Column, Text)
+		}
+	}
+}
+
+ReAlignFB_LV(first)
+{
+	Gui, Main:Default
+	Gui, Main:ListView, HealthListView
+	If (first) {
+		LV_Add("","PID","Max Health","Health")
+	}
+	Loop, 3 {
+	LV_ModifyCol(a_index, "Center")
+	LV_ModifyCol(a_index, "AutoHdr")
+	}
+	Gui, Main:ListView, FBListView
+	If (first) {
+		LV_Add("","PID","Active","Started","Timer","Liquid","Caught","Recasts","Time")
+	}
+	Loop, 8 {
+		LV_ModifyCol(a_index, "Center")
+		LV_ModifyCol(a_index, "AutoHdr")
+	}
+}
+
+GetSelectedpID_FBListView()
+{
+	Gui, Main:Default
+	Gui, Main:ListView, FBListView
+	FocusedRowNumber := LV_GetNext(0, "F")
+	If not FocusedRowNumber
+		Return 0
+	LV_GetText(Text, LV_GetNext(RowNumber))
+	Return Text
+}
+
+DeleteFB_LVRowByPID(pID, List)
+{
+	Gui, Main:Default
+	Gui, Main:ListView, % List
+	Loop % LV_GetCount()
+	{
+		LV_GetText(FBLV_pID, a_index, 1)
+		If(FBLV_pID = pID) 
+		{
+			LV_Delete(a_index)
+		}
+	}
+}
+
+TrayTipDisplay(Message)
+{
+	TrayTip, Grimmjawe Bot , %Message%
+}
+
+SendKeyFuction(Key, pID, WaitTime1, WaitTime2)
+{
+    Random, rand, %WaitTime1%, %WaitTime2%
+	Sleep %rand%
+	ControlSend, , {%Key% up}, % "ahk_pid " pID
+	Sleep, 10
+	ControlSend, , {%Key% down}, % "ahk_pid " pID
+	Sleep, 10
+	ControlSend, , {%Key% up}, % "ahk_pid " pID
+}
+
+SaveData()
+{
+	IniWrite, %FishingKey%, %A_ScriptDir%/%IniFile%, Hotkeys, FishingKey
+	IniWrite, %MainHotkey%, %A_ScriptDir%/%IniFile%, Hotkeys, MainHotkey
+	IniWrite, %PotionKey%, %A_ScriptDir%/%IniFile%, Hotkeys, PotionKey
+}
+	
+MainGuiEscape:
+MainGuiClose:
+	Exitapp
+
